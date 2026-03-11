@@ -10,8 +10,10 @@ function CardUser({}: Props) {
   const stats = useMemo(() => {
     return users.reduce(
       (acc, user) => {
-        user.roles.forEach((rol) => {
-          // Inicializamos o sumamos 1 por cada rol encontrado
+        // Usamos el operador de coalescencia nula (?? []) para evitar el error
+        const userRoles = user.roles ?? [];
+
+        userRoles.forEach((rol) => {
           acc.byRole[rol] = (acc.byRole[rol] || 0) + 1;
         });
 

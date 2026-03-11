@@ -30,7 +30,7 @@ function ModalPassword({}: Props) {
       newPassword: newPass,
     };
 
-    // mutate(payload);
+    mutate(payload);
     console.log(payload);
 
     setTempPassword(newPass);

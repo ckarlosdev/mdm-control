@@ -23,15 +23,15 @@ const storedToken = localStorage.getItem("auth_token");
 const storedRefreshToken = localStorage.getItem("refresh_token");
 
 export const useAuthStore = create<AuthState>((set) => ({
-  // token: storedToken,
-  // refreshToken: storedRefreshToken,
-  // isAuthenticated: !!storedToken,
+  token: storedToken,
+  refreshToken: storedRefreshToken,
+  isAuthenticated: !!storedToken,
 
-  token:
-    "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImNyYW1pcmV6QGhtYnJhbmR0LmNvbSIsImlhdCI6MTc3MzI0NjYwNCwiZXhwIjoxNzczMjQ3NTA0fQ.8aFDDZKVnRQXue3fjUfHzTbDQMxTUhNpWm6jg8ZlwUo",
-  refreshToken:
-    "861295fb-9cad-4b1d-8496-c0561b3529f4.3030323d-ff98-4ebe-bd9c-2acfbf968089",
-  isAuthenticated: true,
+  // token:
+  //   "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImNyYW1pcmV6QGhtYnJhbmR0LmNvbSIsImlhdCI6MTc3MzI0NjYwNCwiZXhwIjoxNzczMjQ3NTA0fQ.8aFDDZKVnRQXue3fjUfHzTbDQMxTUhNpWm6jg8ZlwUo",
+  // refreshToken:
+  //   "861295fb-9cad-4b1d-8496-c0561b3529f4.3030323d-ff98-4ebe-bd9c-2acfbf968089",
+  // isAuthenticated: true,
 
   activeModule: "Home",
   user: null,
