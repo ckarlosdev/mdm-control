@@ -232,72 +232,86 @@ function index({}: Props) {
                   </tr>
                 </thead>
                 <tbody style={{ textAlign: "center" }}>
-                  {(filteredAndSortedItems ?? []).map((item) => (
-                    <tr key={item.id} className="align-middle py-3">
-                      <td>{item.firstName}</td>
-                      <td>{item.lastName}</td>
-                      <td>{item.email}</td>
-                      <td>
-                        {item.isActive ? (
-                          <Badge bg="success">Active</Badge>
-                        ) : (
-                          <Badge bg="danger">Inactive</Badge>
-                        )}
-                      </td>
-                      <td>
-                        {item.roles.map((r) => (
-                          <Badge
-                            key={r}
-                            bg={
-                              r === "ROLE_ADMIN"
-                                ? "success"
+                  {(() => {
+                    console.log(
+                      "¿Qué es filteredAndSortedItems?",
+                      filteredAndSortedItems,
+                    );
+
+                    if (!Array.isArray(filteredAndSortedItems)) {
+                      console.warn(
+                        "filteredAndSortedItems no es un array todavía",
+                      );
+                      return null; // O un <Spinner />
+                    }
+
+                    return filteredAndSortedItems.map((item) => (
+                      <tr key={item.id} className="align-middle py-3">
+                        <td>{item.firstName}</td>
+                        <td>{item.lastName}</td>
+                        <td>{item.email}</td>
+                        <td>
+                          {item.isActive ? (
+                            <Badge bg="success">Active</Badge>
+                          ) : (
+                            <Badge bg="danger">Inactive</Badge>
+                          )}
+                        </td>
+                        <td>
+                          {item.roles.map((r) => (
+                            <Badge
+                              key={r}
+                              bg={
+                                r === "ROLE_ADMIN"
+                                  ? "success"
+                                  : r === "ROLE_SUPERVISOR"
+                                    ? "primary"
+                                    : "secondary"
+                              }
+                            >
+                              {r === "ROLE_ADMIN"
+                                ? "ADMIN"
                                 : r === "ROLE_SUPERVISOR"
-                                  ? "primary"
-                                  : "secondary"
-                            }
+                                  ? "SUPERVISOR"
+                                  : "USER"}
+                            </Badge>
+                          ))}
+                        </td>
+                        <td>
+                          <OverlayTrigger
+                            placement="left"
+                            delay={{ show: 250, hide: 400 }}
+                            overlay={renderPasword}
                           >
-                            {r === "ROLE_ADMIN"
-                              ? "ADMIN"
-                              : r === "ROLE_SUPERVISOR"
-                                ? "SUPERVISOR"
-                                : "USER"}
-                          </Badge>
-                        ))}
-                      </td>
-                      <td>
-                        <OverlayTrigger
-                          placement="left"
-                          delay={{ show: 250, hide: 400 }}
-                          overlay={renderPasword}
-                        >
-                          <Button
-                            style={{ fontWeight: "bold" }}
-                            variant="outline-danger"
-                            onClick={() => resetPassword(item.id)}
+                            <Button
+                              style={{ fontWeight: "bold" }}
+                              variant="outline-danger"
+                              onClick={() => resetPassword(item.id)}
+                            >
+                              <RiLockPasswordFill />
+                              {/* Reset */}
+                            </Button>
+                          </OverlayTrigger>
+                        </td>
+                        <td>
+                          <OverlayTrigger
+                            placement="left"
+                            delay={{ show: 250, hide: 400 }}
+                            overlay={renderUpdateUser}
                           >
-                            <RiLockPasswordFill />
-                            {/* Reset */}
-                          </Button>
-                        </OverlayTrigger>
-                      </td>
-                      <td>
-                        <OverlayTrigger
-                          placement="left"
-                          delay={{ show: 250, hide: 400 }}
-                          overlay={renderUpdateUser}
-                        >
-                          <Button
-                            style={{ fontWeight: "bold" }}
-                            variant="outline-primary"
-                            onClick={() => updateUser(item.id)}
-                          >
-                            <FaUserEdit />
-                            {/* Update */}
-                          </Button>
-                        </OverlayTrigger>
-                      </td>
-                    </tr>
-                  ))}
+                            <Button
+                              style={{ fontWeight: "bold" }}
+                              variant="outline-primary"
+                              onClick={() => updateUser(item.id)}
+                            >
+                              <FaUserEdit />
+                              {/* Update */}
+                            </Button>
+                          </OverlayTrigger>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </Table>
             </div>
