@@ -232,7 +232,7 @@ function index({}: Props) {
                   </tr>
                 </thead>
                 <tbody style={{ textAlign: "center" }}>
-                  {filteredAndSortedItems?.map((item) => (
+                  {(filteredAndSortedItems ?? []).map((item) => (
                     <tr key={item.id} className="align-middle py-3">
                       <td>{item.firstName}</td>
                       <td>{item.lastName}</td>

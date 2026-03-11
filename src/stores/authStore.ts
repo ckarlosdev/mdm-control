@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   activeModule: "Home",
   user: null,
-  showModal: true,
+  showModal: false,
   typeData: "Error",
   modalText: "Mensaje",
 
