@@ -50,7 +50,7 @@ function index({}: Props) {
           item.manufacturing?.toLowerCase().includes(lowSearch) ||
           item.model?.toLowerCase().includes(lowSearch) ||
           item.year?.toLowerCase().includes(lowSearch) ||
-          item.condition?.toLowerCase().includes(lowSearch) ||
+          item.conditions?.toLowerCase().includes(lowSearch) ||
           item.serialNumber?.toLowerCase().includes(lowSearch)
         );
       });
@@ -249,11 +249,11 @@ function index({}: Props) {
                         ))}
                     </th>
                     <th
-                      onClick={() => requestSort("condition")}
+                      onClick={() => requestSort("conditions")}
                       style={{ cursor: "pointer" }}
                     >
                       Condition{" "}
-                      {sortConfig.key === "condition" &&
+                      {sortConfig.key === "conditions" &&
                         (sortConfig.direction === "asc" ? (
                           <VscTriangleUp />
                         ) : (
@@ -285,7 +285,7 @@ function index({}: Props) {
                       <td>{item.manufacturing}</td>
                       <td>{item.model}</td>
                       <td>{item.year}</td>
-                      <td>{item.condition}</td>
+                      <td>{item.conditions}</td>
                       <td>{item.serialNumber}</td>
                       <td>
                         <OverlayTrigger

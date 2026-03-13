@@ -14,10 +14,12 @@ import { IoChevronBack } from "react-icons/io5";
 import { MdLogout } from "react-icons/md";
 import { useIsMutating } from "@tanstack/react-query";
 import PopUpModal from "./components/PopUpModal";
+import useUserMe from "./hooks/useUser";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
-  const { activeModule, refreshToken, logout } = useAuthStore();
+  const { activeModule, refreshToken, logout, user: userAuth } = useAuthStore();
+  const { isLoading: loadingUser } = useUserMe();
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -37,6 +39,12 @@ function App() {
   };
   const isMutating = useIsMutating();
   const isSaving = isMutating > 0;
+
+  if (loadingUser) {
+    return <Spinner />;
+  }
+
+  // console.log("a", userAuth);
 
   return (
     <>
@@ -66,9 +74,24 @@ function App() {
           <Col xs="auto" className="text-center">
             <img style={{ width: "200px" }} src={hmbLogo} alt="Logo" />
           </Col>
-          <Col className="d-flex justify-content-end">
+          <Col className="d-flex justify-content-end align-items-center gap-3">
+            <div
+              style={{
+                fontSize: "0.85rem",
+                color: "#6c757d",
+                borderRight: "1px solid #dee2e6",
+                paddingRight: "15px",
+                fontWeight: "500",
+              }}
+            >
+              <span style={{ opacity: 0.7 }}>User: </span>
+              <span className="text-dark">
+                {userAuth?.fullName || "Guest"}
+              </span>
+            </div>
+
             <Button
-              variant="outline-secondary"
+              variant="outline-danger" // Cambié a danger para que sea claro que es Logout
               size="sm"
               onClick={handleLogout}
               disabled={isLoading}
@@ -82,12 +105,8 @@ function App() {
                 justifyContent: "center",
               }}
             >
-              {isLoading ? (
-                <span style={{ marginRight: "4px" }}>Logging out</span>
-              ) : (
-                <span style={{ marginRight: "4px" }}>Logout</span>
-              )}
-              <MdLogout size={18} />
+              {isLoading ? "Loging out..." : "Logout"}
+              <MdLogout size={18} className="ms-2" />
             </Button>
           </Col>
         </Row>

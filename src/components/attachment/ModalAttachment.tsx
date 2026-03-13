@@ -11,7 +11,12 @@ function ModalAttachment({}: Props) {
   const { attachment, showModal, setShowModal, setAttachmentData } =
     useAttachmentStore();
 
-  const { setShowModal: setPopUp, setTypeData, setModalText } = useAuthStore();
+  const {
+    setShowModal: setPopUp,
+    setTypeData,
+    setModalText,
+    user: userAuth,
+  } = useAuthStore();
 
   const { data: attachmentsData } = useAttachments();
   const { mutate } = useSaveAttachment();
@@ -32,6 +37,7 @@ function ModalAttachment({}: Props) {
     const payload = {
       ...attachment,
       number: "A" + onlyDigits,
+      user: userAuth?.email || "unknown",
     };
 
     mutate(
@@ -296,9 +302,9 @@ function ModalAttachment({}: Props) {
               >
                 <Form.Select
                   aria-label="Condition"
-                  value={attachment.condition}
+                  value={attachment.conditions}
                   onChange={(e) => {
-                    setAttachmentData("condition", e.target.value);
+                    setAttachmentData("conditions", e.target.value);
                   }}
                   style={{ fontWeight: "bold", textAlign: "center" }}
                 >

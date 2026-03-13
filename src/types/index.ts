@@ -7,6 +7,12 @@ export type User = {
   roles: string[];
 };
 
+export type authUser = {
+  email: string;
+  fullName: string;
+  id: string;
+};
+
 export type RegisterRequest = {
   email: string;
   password: string;
@@ -28,6 +34,7 @@ export type Employee = {
   lastName: string;
   status: string;
   title: string;
+  user: string;
 };
 
 export type Equipment = {
@@ -43,6 +50,7 @@ export type Equipment = {
   condition: string;
   serialNumber: string;
   hour: string;
+  user: string;
 };
 
 export type Attachment = {
@@ -55,8 +63,9 @@ export type Attachment = {
   year: string;
   purchaseDate: string;
   status: string;
-  condition: string;
+  conditions: string;
   serialNumber: string;
+  user: string;
 };
 
 export type Job = {
@@ -68,4 +77,5 @@ export type Job = {
   contractor: string;
   contact: string;
   status: string;
+  user: string;
 };

@@ -10,7 +10,12 @@ type Props = {};
 
 function ModalJob({}: Props) {
   const { job, showModal, setShowModal, setJobData } = useJobStore();
-  const { setShowModal: setPopUp, setTypeData, setModalText } = useAuthStore();
+  const {
+    setShowModal: setPopUp,
+    setTypeData,
+    setModalText,
+    user: userAuth,
+  } = useAuthStore();
 
   const { data: jobsData } = useJobs();
 
@@ -18,8 +23,14 @@ function ModalJob({}: Props) {
 
   const handleSave = () => {
     if (!dataValidation()) return;
+
+    const payload = {
+      ...job,
+      user: userAuth?.email || "unknown",
+    };
+
     mutate(
-      { jobData: job },
+      { jobData: payload },
       {
         onSuccess: () => {
           setShowModal(false);

@@ -2,6 +2,7 @@ import { Button, Col, FloatingLabel, Form, Modal, Row } from "react-bootstrap";
 import useEquipmentStore from "../../stores/useEquipmentStore";
 import { useEquipments, useSaveEquipment } from "../../hooks/useEquipments";
 import { TbForklift } from "react-icons/tb";
+import { useAuthStore } from "../../stores/authStore";
 
 type Props = {};
 
@@ -12,8 +13,14 @@ function ModalEquipment({}: Props) {
   const { data: equipmentData } = useEquipments();
   const { mutate } = useSaveEquipment();
 
+  const {
+    setShowModal: setPopUp,
+    setTypeData,
+    setModalText,
+    user: userAuth,
+  } = useAuthStore();
+
   const handleSave = () => {
-    console.log(equipment);
     if (!dataValidation()) return;
 
     const onlyDigits = equipment.number.toString().replace(/\D/g, "");
@@ -21,9 +28,26 @@ function ModalEquipment({}: Props) {
     const payload = {
       ...equipment,
       number: "E" + onlyDigits,
+      user: userAuth?.email || "unknown",
     };
 
-    mutate({ equipmentData: payload });
+    mutate(
+      { equipmentData: payload },
+      {
+        onSuccess: () => {
+          setShowModal(false);
+          setTypeData("Success");
+          setModalText("Equipment data saved successfully.");
+          setPopUp(true);
+        },
+        onError: (error) => {
+          console.log(error);
+          setTypeData("Error");
+          setModalText("There was an error saving the data.");
+          setPopUp(true);
+        },
+      },
+    );
   };
 
   const dataValidation = () => {
@@ -256,7 +280,9 @@ function ModalEquipment({}: Props) {
                   type="date"
                   placeholder="Purchase date"
                   value={equipment.purchaseDate}
-                  onChange={(e) => setEquipmentData("purchaseDate", e.target.value)}
+                  onChange={(e) =>
+                    setEquipmentData("purchaseDate", e.target.value)
+                  }
                   style={{ fontWeight: "bold", textAlign: "center" }}
                 />
               </FloatingLabel>

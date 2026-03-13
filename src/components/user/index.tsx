@@ -233,16 +233,8 @@ function index({}: Props) {
                 </thead>
                 <tbody style={{ textAlign: "center" }}>
                   {(() => {
-                    console.log(
-                      "¿Qué es filteredAndSortedItems?",
-                      filteredAndSortedItems,
-                    );
-
                     if (!Array.isArray(filteredAndSortedItems)) {
-                      console.warn(
-                        "filteredAndSortedItems no es un array todavía",
-                      );
-                      return null; // O un <Spinner />
+                      return null;
                     }
 
                     return filteredAndSortedItems.map((item) => (

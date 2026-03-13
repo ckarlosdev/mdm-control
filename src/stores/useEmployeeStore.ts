@@ -23,6 +23,7 @@ const initialData = {
   lastName: "",
   status: "Active",
   title: "Labor",
+  user: "unknown"
 };
 
 const useEmployeeStore = create<EmployeeStore>()(

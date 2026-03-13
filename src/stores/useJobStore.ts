@@ -12,8 +12,6 @@ type JobStore = {
   reset: () => void;
 };
 
-
-
 const initialData = {
   jobsId: null,
   number: "",
@@ -23,6 +21,7 @@ const initialData = {
   contractor: "",
   contact: "",
   status: "Pending",
+  user: "unknown",
 };
 
 const useJobStore = create<JobStore>()(

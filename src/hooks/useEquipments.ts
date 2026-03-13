@@ -34,10 +34,6 @@ export function useSaveEquipment() {
     mutationFn: createEquipment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
-      alert("Equipment data saved.");
-    },
-    onError: () => {
-      alert("Error saving Equipment data.");
-    },
+    }
   });
 }

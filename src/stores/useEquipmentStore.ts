@@ -39,6 +39,7 @@ const initialData = {
   condition: "Excellent",
   serialNumber: "",
   hour: "0.0",
+  user: "unknown"
 };
 
 

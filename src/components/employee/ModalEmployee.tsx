@@ -18,7 +18,12 @@ function ModalEmployee({}: Props) {
   const { showModal, setShowModal, employee, setEmployeeData } =
     useEmployeeStore();
   const { data: employeesData } = useEmployees();
-  const { setShowModal: setPopUp, setTypeData, setModalText } = useAuthStore();
+  const {
+    setShowModal: setPopUp,
+    setTypeData,
+    setModalText,
+    user: userAuth,
+  } = useAuthStore();
 
   const { mutate } = useSaveEmployee();
 
@@ -37,6 +42,7 @@ function ModalEmployee({}: Props) {
     const payload = {
       ...employee,
       employeeNumber: prefixNumber + onlyDigits,
+      user: userAuth?.email || "unknown",
     };
 
     mutate(

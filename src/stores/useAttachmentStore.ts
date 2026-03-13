@@ -36,8 +36,9 @@ const initialData = {
   year: "2026",
   purchaseDate: getTodayDate(),
   status: "New",
-  condition: "Excellent",
+  conditions: "Excellent",
   serialNumber: "",
+  user: "unknown",
 };
 
 const useAttachmentStore = create<AttachmentStore>()(

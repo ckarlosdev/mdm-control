@@ -1,12 +1,12 @@
 import { create } from "zustand";
-import type { User } from "../types";
+import type { authUser } from "../types";
 
 interface AuthState {
   token: string | null;
   refreshToken?: string | null;
   isAuthenticated: boolean;
   activeModule: string;
-  user: User | null;
+  user: authUser | null;
   showModal: boolean;
   typeData: string;
   modalText: string;
@@ -16,7 +16,8 @@ interface AuthState {
   setActiveModule: (module: string) => void;
   login: (token: string, refreshToken: string) => void;
   logout: () => void;
-  setUser: (user: User | null) => void;
+  setUser: (user: authUser | null) => void;
+  clearAuth: () => void;
 }
 
 const storedToken = localStorage.getItem("auth_token");
@@ -28,9 +29,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: !!storedToken,
 
   // token:
-  //   "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImNyYW1pcmV6QGhtYnJhbmR0LmNvbSIsImlhdCI6MTc3MzI0NjYwNCwiZXhwIjoxNzczMjQ3NTA0fQ.8aFDDZKVnRQXue3fjUfHzTbDQMxTUhNpWm6jg8ZlwUo",
+  //   "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInN1YiI6ImNyYW1pcmV6QGhtYnJhbmR0LmNvbSIsImlhdCI6MTc3MzQxOTk4MCwiZXhwIjoxNzczNDIwODgwfQ.Lk9JyJzv6Gh3Hyqe-wv37GNQiv7XUz6PBc43J1iabAI",
   // refreshToken:
-  //   "861295fb-9cad-4b1d-8496-c0561b3529f4.3030323d-ff98-4ebe-bd9c-2acfbf968089",
+  //   "a8e3bef6-9584-432c-a923-6931707b269e.b9b6d6df-a9c9-4b44-9938-f9c254f8c327",
   // isAuthenticated: true,
 
   activeModule: "Home",
@@ -63,4 +64,5 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setUser: (user) => set({ user }),
+  clearAuth: () => set({ user: null, isAuthenticated: false }),
 }));
