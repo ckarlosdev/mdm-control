@@ -19,6 +19,7 @@ import ModalUserCreation from "./ModalUserCreation";
 import useUserStore from "../../stores/useUserStore";
 import { RiLockPasswordFill } from "react-icons/ri";
 import ModalPassword from "./ModalPassword";
+import { useAuthStore } from "../../stores/authStore";
 
 type Props = {};
 
@@ -30,7 +31,7 @@ interface SortConfig {
 function index({}: Props) {
   const { data: usersData } = useUsers();
   const [searchTerm, setSearchTerm] = useState("");
-
+  const { user: userAuth } = useAuthStore();
   const {
     setShowModalCreate,
     setShowModalUpdate,
@@ -122,193 +123,215 @@ function index({}: Props) {
 
   // console.log(usersData);
 
+  const isAdmin = userAuth?.roles?.some((role) => role.name === "ROLE_ADMIN");
+
   return (
     <>
       <Container fluid>
-        <Row className="mb-3">
-          <Col>
-            <Button
-              variant="outline-primary"
-              style={{ fontWeight: "bold" }}
-              onClick={() => {
-                resetCreation();
-                setShowModalCreate(true);
-              }}
-            >
-              <FaUserPlus style={{ marginRight: "8px" }} />
-              Add User
-            </Button>
-          </Col>
-          <Col xs md={4} lg={3} className="text-center">
-            <div style={{ fontWeight: "bold", fontSize: "30px" }}>
-              {"Users"}
-            </div>
-          </Col>
-          <Col>
-            <div className="d-flex align-items-center justify-content-end h-100">
-              <Form.Control
-                type="text"
-                id="inputSearch"
-                style={{
-                  fontWeight: "bold",
-                  width: "300px",
-                  textAlign: "center",
-                }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search user..."
-              />
-              <VscSearch style={{ marginLeft: "8px" }} />
-            </div>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <div
-              style={{ maxHeight: "calc(100vh - 210px)", overflowY: "auto" }}
-            >
-              <Table striped bordered hover size="sm">
-                <thead
-                  style={{
-                    position: "sticky",
-                    top: 0,
-                    backgroundColor: "#fff",
-                    zIndex: 10,
-                    boxShadow: "inset 0 -1px 0 #dee2e6",
+        {isAdmin ? (
+          <>
+            <Row className="mb-3">
+              <Col>
+                <Button
+                  variant="outline-primary"
+                  style={{ fontWeight: "bold" }}
+                  onClick={() => {
+                    resetCreation();
+                    setShowModalCreate(true);
                   }}
                 >
-                  <tr style={{ textAlign: "center" }}>
-                    <th
-                      onClick={() => requestSort("firstName")}
-                      style={{ cursor: "pointer" }}
+                  <FaUserPlus style={{ marginRight: "8px" }} />
+                  Add User
+                </Button>
+              </Col>
+              <Col xs md={4} lg={3} className="text-center">
+                <div style={{ fontWeight: "bold", fontSize: "30px" }}>
+                  {"Users"}
+                </div>
+              </Col>
+              <Col>
+                <div className="d-flex align-items-center justify-content-end h-100">
+                  <Form.Control
+                    type="text"
+                    id="inputSearch"
+                    style={{
+                      fontWeight: "bold",
+                      width: "300px",
+                      textAlign: "center",
+                    }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search user..."
+                  />
+                  <VscSearch style={{ marginLeft: "8px" }} />
+                </div>
+              </Col>
+            </Row>
+            <Row>
+              <Col>
+                <div
+                  style={{
+                    maxHeight: "calc(100vh - 210px)",
+                    overflowY: "auto",
+                  }}
+                >
+                  <Table striped bordered hover size="sm">
+                    <thead
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        backgroundColor: "#fff",
+                        zIndex: 10,
+                        boxShadow: "inset 0 -1px 0 #dee2e6",
+                      }}
                     >
-                      First Name{" "}
-                      {sortConfig.key === "firstName" &&
-                        (sortConfig.direction === "asc" ? (
-                          <VscTriangleUp />
-                        ) : (
-                          <VscTriangleDown />
-                        ))}
-                    </th>
-                    <th
-                      onClick={() => requestSort("lastName")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Last Name{" "}
-                      {sortConfig.key === "lastName" &&
-                        (sortConfig.direction === "asc" ? (
-                          <VscTriangleUp />
-                        ) : (
-                          <VscTriangleDown />
-                        ))}
-                    </th>
-                    <th
-                      onClick={() => requestSort("email")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Email{" "}
-                      {sortConfig.key === "email" &&
-                        (sortConfig.direction === "asc" ? (
-                          <VscTriangleUp />
-                        ) : (
-                          <VscTriangleDown />
-                        ))}
-                    </th>
-                    <th
-                      onClick={() => requestSort("isActive")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      Status{" "}
-                      {sortConfig.key === "isActive" &&
-                        (sortConfig.direction === "asc" ? (
-                          <VscTriangleUp />
-                        ) : (
-                          <VscTriangleDown />
-                        ))}
-                    </th>
-                    <th>Role</th>
-                    <th>Password</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody style={{ textAlign: "center" }}>
-                  {(() => {
-                    if (!Array.isArray(filteredAndSortedItems)) {
-                      return null;
-                    }
-
-                    return filteredAndSortedItems.map((item) => (
-                      <tr key={item.id} className="align-middle py-3">
-                        <td>{item.firstName}</td>
-                        <td>{item.lastName}</td>
-                        <td>{item.email}</td>
-                        <td>
-                          {item.isActive ? (
-                            <Badge bg="success">Active</Badge>
-                          ) : (
-                            <Badge bg="danger">Inactive</Badge>
-                          )}
-                        </td>
-                        <td>
-                          {item.roles.map((r) => (
-                            <Badge
-                              key={r}
-                              bg={
-                                r === "ROLE_ADMIN"
-                                  ? "success"
-                                  : r === "ROLE_SUPERVISOR"
-                                    ? "primary"
-                                    : "secondary"
-                              }
-                            >
-                              {r === "ROLE_ADMIN"
-                                ? "ADMIN"
-                                : r === "ROLE_SUPERVISOR"
-                                  ? "SUPERVISOR"
-                                  : "USER"}
-                            </Badge>
-                          ))}
-                        </td>
-                        <td>
-                          <OverlayTrigger
-                            placement="left"
-                            delay={{ show: 250, hide: 400 }}
-                            overlay={renderPasword}
-                          >
-                            <Button
-                              style={{ fontWeight: "bold" }}
-                              variant="outline-danger"
-                              onClick={() => resetPassword(item.id)}
-                            >
-                              <RiLockPasswordFill />
-                              {/* Reset */}
-                            </Button>
-                          </OverlayTrigger>
-                        </td>
-                        <td>
-                          <OverlayTrigger
-                            placement="left"
-                            delay={{ show: 250, hide: 400 }}
-                            overlay={renderUpdateUser}
-                          >
-                            <Button
-                              style={{ fontWeight: "bold" }}
-                              variant="outline-primary"
-                              onClick={() => updateUser(item.id)}
-                            >
-                              <FaUserEdit />
-                              {/* Update */}
-                            </Button>
-                          </OverlayTrigger>
-                        </td>
+                      <tr style={{ textAlign: "center" }}>
+                        <th
+                          onClick={() => requestSort("firstName")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          First Name{" "}
+                          {sortConfig.key === "firstName" &&
+                            (sortConfig.direction === "asc" ? (
+                              <VscTriangleUp />
+                            ) : (
+                              <VscTriangleDown />
+                            ))}
+                        </th>
+                        <th
+                          onClick={() => requestSort("lastName")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          Last Name{" "}
+                          {sortConfig.key === "lastName" &&
+                            (sortConfig.direction === "asc" ? (
+                              <VscTriangleUp />
+                            ) : (
+                              <VscTriangleDown />
+                            ))}
+                        </th>
+                        <th
+                          onClick={() => requestSort("email")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          Email{" "}
+                          {sortConfig.key === "email" &&
+                            (sortConfig.direction === "asc" ? (
+                              <VscTriangleUp />
+                            ) : (
+                              <VscTriangleDown />
+                            ))}
+                        </th>
+                        <th
+                          onClick={() => requestSort("isActive")}
+                          style={{ cursor: "pointer" }}
+                        >
+                          Status{" "}
+                          {sortConfig.key === "isActive" &&
+                            (sortConfig.direction === "asc" ? (
+                              <VscTriangleUp />
+                            ) : (
+                              <VscTriangleDown />
+                            ))}
+                        </th>
+                        <th>Role</th>
+                        <th>Password</th>
+                        <th>Action</th>
                       </tr>
-                    ));
-                  })()}
-                </tbody>
-              </Table>
-            </div>
-          </Col>
-        </Row>
+                    </thead>
+                    <tbody style={{ textAlign: "center" }}>
+                      {(() => {
+                        if (!Array.isArray(filteredAndSortedItems)) {
+                          return null;
+                        }
+
+                        return filteredAndSortedItems.map((item) => (
+                          <tr key={item.id} className="align-middle py-3">
+                            <td>{item.firstName}</td>
+                            <td>{item.lastName}</td>
+                            <td>{item.email}</td>
+                            <td>
+                              {item.isActive ? (
+                                <Badge bg="success">Active</Badge>
+                              ) : (
+                                <Badge bg="danger">Inactive</Badge>
+                              )}
+                            </td>
+                            <td>
+                              {item.roles.map((r) => (
+                                <Badge
+                                  key={r}
+                                  bg={
+                                    r === "ROLE_ADMIN"
+                                      ? "success"
+                                      : r === "ROLE_SUPERVISOR" ||
+                                          r === "ROLE_SUPERINTENDENT" ||
+                                          r === "ROLE_OPERATION"
+                                        ? "primary"
+                                        : "secondary"
+                                  }
+                                >
+                                  {r === "ROLE_ADMIN"
+                                    ? "ADMIN"
+                                    : r === "ROLE_SUPERVISOR"
+                                      ? "SUPERVISOR"
+                                      : r === "ROLE_SUPERINTENDENT"
+                                        ? "SUPERINTENDENT"
+                                        : r === "ROLE_OPERATION"
+                                          ? "OPERATION"
+                                          : "USER"}
+                                </Badge>
+                              ))}
+                            </td>
+                            <td>
+                              <OverlayTrigger
+                                placement="left"
+                                delay={{ show: 250, hide: 400 }}
+                                overlay={renderPasword}
+                              >
+                                <Button
+                                  style={{ fontWeight: "bold" }}
+                                  variant="outline-danger"
+                                  onClick={() => resetPassword(item.id)}
+                                >
+                                  <RiLockPasswordFill />
+                                  {/* Reset */}
+                                </Button>
+                              </OverlayTrigger>
+                            </td>
+                            <td>
+                              <OverlayTrigger
+                                placement="left"
+                                delay={{ show: 250, hide: 400 }}
+                                overlay={renderUpdateUser}
+                              >
+                                <Button
+                                  style={{ fontWeight: "bold" }}
+                                  variant="outline-primary"
+                                  onClick={() => updateUser(item.id)}
+                                >
+                                  <FaUserEdit />
+                                  {/* Update */}
+                                </Button>
+                              </OverlayTrigger>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </Table>
+                </div>
+              </Col>
+            </Row>
+          </>
+        ) : (
+          <Row className="mt-5">
+            <Col className="text-center">
+              <h1 className="text-danger">No Admin User</h1>
+              <p>You do not have permission to manage users.</p>
+            </Col>
+          </Row>
+        )}
       </Container>
 
       <ModalUserUpdate />

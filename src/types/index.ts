@@ -11,6 +11,12 @@ export type authUser = {
   email: string;
   fullName: string;
   id: string;
+  roles: Role[];
+};
+
+export type Role = {
+  id: number;
+  name: string;
 };
 
 export type RegisterRequest = {

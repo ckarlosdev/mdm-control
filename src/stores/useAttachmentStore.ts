@@ -28,7 +28,7 @@ const getTodayDate = () => {
 
 const initialData = {
   attachmentsId: null,
-  family: "Attachment",
+  family: "",
   number: "",
   name: "",
   manufacturing: "",

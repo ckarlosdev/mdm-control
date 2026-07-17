@@ -91,7 +91,7 @@ function App() {
             </div>
 
             <Button
-              variant="outline-danger" // Cambié a danger para que sea claro que es Logout
+              variant="outline-danger" 
               size="sm"
               onClick={handleLogout}
               disabled={isLoading}
@@ -132,7 +132,7 @@ function App() {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            backgroundColor: "rgb(228 230 231)",
             zIndex: 9999,
             display: "flex",
             flexDirection: "column",

@@ -50,7 +50,7 @@ function PopUpModal({}: Props) {
             onClick={() => setShowModal(false)}
             style={{ fontWeight: "bold" }}
           >
-            Understood
+            Ok
           </Button>
         </Modal.Footer>
       </Modal>

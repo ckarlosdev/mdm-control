@@ -205,6 +205,28 @@ function ModalUserUpdate({}: Props) {
                   />
                   <Form.Check
                     inline
+                    label="Superintendent"
+                    name="roleGroup"
+                    type={"radio"}
+                    id={`superintendent`}
+                    value="ROLE_SUPERINTENDENT"
+                    checked={user.roles?.includes("ROLE_SUPERINTENDENT")}
+                    onChange={(e) => setUserData("roles", [e.target.value])}
+                    style={{ fontWeight: "bold" }}
+                  />
+                  <Form.Check
+                    inline
+                    label="Operation"
+                    name="roleGroup"
+                    type={"radio"}
+                    id={`operation`}
+                    value="ROLE_OPERATION"
+                    checked={user.roles?.includes("ROLE_OPERATION")}
+                    onChange={(e) => setUserData("roles", [e.target.value])}
+                    style={{ fontWeight: "bold" }}
+                  />
+                  <Form.Check
+                    inline
                     // disabled
                     label="Admin"
                     name="roleGroup"

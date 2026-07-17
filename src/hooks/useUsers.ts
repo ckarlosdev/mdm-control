@@ -31,13 +31,7 @@ export function useUpdateUser() {
     mutationFn: updateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      alert("User data udpated.");
-    },
-    onError: (error: any) => {
-      const message =
-        error.response?.data?.message || "Error udpating user data";
-      alert(message);
-    },
+    }
   });
 }
 

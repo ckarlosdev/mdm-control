@@ -283,6 +283,36 @@ function ModalUserCreation({}: Props) {
                       />
                       <Form.Check
                         inline
+                        label="Superintendent"
+                        name="roleGroup"
+                        type={"radio"}
+                        id={`superintendent`}
+                        value="ROLE_SUPERINTENDENT"
+                        checked={userCreation.roles?.includes(
+                          "ROLE_SUPERINTENDENT",
+                        )}
+                        onChange={(e) =>
+                          setUserDataCreation("roles", [e.target.value])
+                        }
+                        style={{ fontWeight: "bold" }}
+                      />
+                      <Form.Check
+                        inline
+                        label="Operation"
+                        name="roleGroup"
+                        type={"radio"}
+                        id={`operation`}
+                        value="ROLE_OPERATION"
+                        checked={userCreation.roles?.includes(
+                          "ROLE_OPERATION",
+                        )}
+                        onChange={(e) =>
+                          setUserDataCreation("roles", [e.target.value])
+                        }
+                        style={{ fontWeight: "bold" }}
+                      />
+                      <Form.Check
+                        inline
                         // disabled
                         label="Admin"
                         name="roleGroup"
