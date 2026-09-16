@@ -8,7 +8,9 @@ import {
   Table,
   Tooltip,
 } from "react-bootstrap";
-import { TbForklift } from "react-icons/tb";
+import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+import { TbDownload, TbForklift } from "react-icons/tb";
 import { VscSearch, VscTriangleDown, VscTriangleUp } from "react-icons/vsc";
 import { useEquipments } from "../../hooks/useEquipments";
 import type { Equipment } from "../../types";
@@ -29,8 +31,10 @@ interface SortConfig {
 function index({}: Props) {
   const { data: equipmentsData } = useEquipments();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const { reset, setShowModal, setShowModalQr, equipmentSelected } = useEquipmentStore();
+  const { reset, setShowModal, setShowModalQr, equipmentSelected } =
+    useEquipmentStore();
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
@@ -42,6 +46,7 @@ function index({}: Props) {
 
     let result = [...equipmentsData];
 
+    // 1. Filtrado (se mantiene igual)
     if (searchTerm) {
       const lowSearch = searchTerm.toLowerCase();
       result = result.filter((equip) => {
@@ -57,14 +62,44 @@ function index({}: Props) {
       });
     }
 
+    // 2. Ordenamiento inteligente (Natural Sort)
     if (sortConfig.key) {
       const { key, direction } = sortConfig;
+
+      // Creamos un comparador nativo con ordenamiento numérico activado
+      const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+
       result.sort((a, b) => {
-        const aValue = a[key];
-        const bValue = b[key];
+        let aValue = a[key];
+        let bValue = b[key];
 
-        if (aValue == null || bValue == null) return 0;
+        // Manejo de valores nulos o indefinidos colocándolos siempre al final
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
 
+        // Si la clave a ordenar es "number", nos aseguramos de comparar de forma natural
+        // (por ejemplo: limpia letras/guiones si fuera necesario, o simplemente compara numéricamente)
+        if (key === "number") {
+          // Aseguramos conversión a string para que el collator funcione perfectamente
+          const strA = String(aValue);
+          const strB = String(bValue);
+
+          return direction === "asc"
+            ? collator.compare(strA, strB)
+            : collator.compare(strB, strA);
+        }
+
+        // Para el resto de columnas de texto o valores genéricos
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          return direction === "asc"
+            ? collator.compare(aValue, bValue)
+            : collator.compare(bValue, aValue);
+        }
+
+        // Caída para tipos de datos puramente numéricos u otros (por ejemplo, Odometer / hour)
         if (aValue < bValue) return direction === "asc" ? -1 : 1;
         if (aValue > bValue) return direction === "asc" ? 1 : -1;
         return 0;
@@ -104,7 +139,7 @@ function index({}: Props) {
       equipmentSelected(equip);
       setShowModalQr(true);
     }
-  }
+  };
 
   const renderUpdate = (props: any) => (
     <Tooltip id="button-tooltip" {...props}>
@@ -118,6 +153,103 @@ function index({}: Props) {
     </Tooltip>
   );
 
+  const exportarTodosLosQR = async () => {
+    if (!filteredAndSortedEquipment || filteredAndSortedEquipment.length === 0)
+      return;
+
+    setIsGeneratingPdf(true);
+
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4", // 210 x 297 mm
+      });
+
+      // --- CONFIGURACIÓN ULTRA-COMPACTA (Para meter la mayor cantidad de QRs por página) ---
+      const marginX = 8; // Margen izquierdo y derecho de la hoja
+      const marginY = 10; // Margen superior e inferior
+      const cardWidth = 26; // Ancho de cada mini-tarjeta
+      const cardHeight = 32; // Alto de cada mini-tarjeta
+      const qrSize = 22; // Tamaño del código QR (muy legible para cámaras modernas)
+      const cols = 7; // 7 columnas horizontales
+      const rowsPerPage = 8; // 8 filas verticales (Total: 56 QRs por página A4)
+
+      // Distribución automática de los espacios intermedios (gaps)
+      const gapX = (210 - marginX * 2 - cardWidth * cols) / (cols - 1);
+      const gapY =
+        (297 - marginY * 2 - cardHeight * rowsPerPage) / (rowsPerPage - 1);
+
+      let currentCol = 0;
+      let currentRow = 0;
+
+      for (let i = 0; i < filteredAndSortedEquipment.length; i++) {
+        const equip = filteredAndSortedEquipment[i];
+
+        // 1. Generar la URL del QR
+        const qrText = `https://oleo-soft.com/index.html?id=${equip.equipmentsId}&name=${equip.name}&number=${equip.number}`;
+
+        // 2. Crear el QR en memoria con márgenes internos de 0 para aprovechar el espacio
+        const qrDataUrl = await QRCode.toDataURL(qrText, {
+          margin: 0,
+          width: 150,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+
+        // 3. Calcular la posición exacta en el canvas PDF
+        const x = marginX + currentCol * (cardWidth + gapX);
+        const y = marginY + currentRow * (cardHeight + gapY);
+
+        // (Opcional) Línea divisoria muy tenue para recortar con tijera/guillotina
+        doc.setDrawColor(230, 230, 230);
+        doc.rect(x, y, cardWidth, cardHeight);
+
+        // 4. Dibujar el QR centrado horizontalmente dentro de su celda
+        const qrX = x + (cardWidth - qrSize) / 2;
+        doc.addImage(qrDataUrl, "PNG", qrX, y + 2, qrSize, qrSize);
+
+        // 5. Dibujar el número del equipo abajo del QR
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5); // Tamaño de fuente pequeño pero muy legible al imprimir
+
+        // Limpiar el número de caracteres no deseados
+        const cleanNumber = equip.number
+          ? equip.number.replace(/\D/g, "")
+          : "N/A";
+        doc.text(cleanNumber, x + cardWidth / 2, y + qrSize + 6, {
+          align: "center",
+        });
+
+        // 6. Manejo de la cuadrícula y saltos de página
+        currentCol++;
+        if (currentCol >= cols) {
+          currentCol = 0;
+          currentRow++;
+        }
+
+        // Si llenamos la página actual (56 QRs) y quedan más equipos, creamos otra página
+        if (
+          currentRow >= rowsPerPage &&
+          i < filteredAndSortedEquipment.length - 1
+        ) {
+          doc.addPage();
+          currentRow = 0;
+          currentCol = 0;
+        }
+      }
+
+      // Guardar el PDF optimizado
+      doc.save("equipments-qr-codes.pdf");
+    } catch (error) {
+      console.error("Error generando el PDF de QRs compactos:", error);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
     <>
       <Container fluid>
@@ -130,6 +262,17 @@ function index({}: Props) {
             >
               <TbForklift style={{ marginRight: "8px" }} />
               Add Equipment
+            </Button>
+
+            {/* NUEVO BOTÓN PARA DESCARGAR TODOS LOS QR */}
+            <Button
+              variant="outline-success"
+              style={{ fontWeight: "bold" }}
+              onClick={exportarTodosLosQR}
+              disabled={isGeneratingPdf || !filteredAndSortedEquipment.length}
+            >
+              <TbDownload style={{ marginRight: "8px" }} />
+              {isGeneratingPdf ? "Generating PDF..." : "Export all QRs (PDF)"}
             </Button>
           </Col>
           <Col xs md={4} lg={3} className="text-center">
