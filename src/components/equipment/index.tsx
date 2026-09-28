@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonGroup,
   Col,
   Container,
   Form,
@@ -254,31 +255,27 @@ function index({}: Props) {
     <>
       <Container fluid>
         <Row className="mb-3">
-          <Col>
-            <Button
-              variant="outline-primary"
-              style={{ fontWeight: "bold" }}
-              onClick={openModal}
-            >
-              <TbForklift style={{ marginRight: "8px" }} />
-              Add Equipment
-            </Button>
+          <Col className="d-flex justify-content-start">
+            <ButtonGroup>
+              <Button
+                variant="outline-primary"
+                className="d-inline-flex align-items-center px-3 py-2 fw-bold"
+                onClick={openModal}
+              >
+                <TbForklift className="me-2 fs-5" />
+                Add Equipment
+              </Button>
 
-            {/* NUEVO BOTÓN PARA DESCARGAR TODOS LOS QR */}
-            <Button
-              variant="outline-success"
-              style={{ fontWeight: "bold" }}
-              onClick={exportarTodosLosQR}
-              disabled={isGeneratingPdf || !filteredAndSortedEquipment.length}
-            >
-              <TbDownload style={{ marginRight: "8px" }} />
-              {isGeneratingPdf ? "Generating PDF..." : "Export all QRs (PDF)"}
-            </Button>
-          </Col>
-          <Col xs md={4} lg={3} className="text-center">
-            <div style={{ fontWeight: "bold", fontSize: "30px" }}>
-              {"Equipments"}
-            </div>
+              <Button
+                variant="outline-success"
+                className="d-inline-flex align-items-center px-3 py-2 fw-bold"
+                onClick={exportarTodosLosQR}
+                disabled={isGeneratingPdf || !filteredAndSortedEquipment.length}
+              >
+                <TbDownload className="me-2 fs-5" />
+                {isGeneratingPdf ? "Generating PDF..." : "Export all QRs (PDF)"}
+              </Button>
+            </ButtonGroup>
           </Col>
           <Col>
             <div className="d-flex align-items-center justify-content-end h-100">
