@@ -8,15 +8,19 @@ function CardEquipment({}: Props) {
   const { data: equipments = [] } = useEquipments();
 
   const stats = useMemo(() => {
-    return equipments.reduce(
-      (acc, equip) => {
-        acc.byStatus[equip.status] = (acc.byStatus[equip.status] || 0) + 1;
-        return acc;
-      },
-      {
-        byStatus: {} as Record<string, number>,
-      },
-    );
+    return equipments
+      .filter((equip) => equip.equipmentStatus === "1" && equip.number != "E00")
+      .reduce(
+        (acc, equip) => {
+          acc.total += 1;
+          acc.byFamily[equip.family] = (acc.byFamily[equip.family] || 0) + 1;
+          return acc;
+        },
+        {
+          total: 0,
+          byFamily: {} as Record<string, number>,
+        },
+      );
   }, [equipments]);
 
   //   console.log(stats);
@@ -29,12 +33,8 @@ function CardEquipment({}: Props) {
         </Card.Title>
 
         <div className="text-center mb-4">
-          <div className="display-6 fw-bold text-primary">
-            {equipments.length}
-          </div>
-          <small className="text-muted text-uppercase fw-semibold">
-            Total
-          </small>
+          <div className="display-6 fw-bold text-primary">{stats.total}</div>
+          <small className="text-muted text-uppercase fw-semibold">Total</small>
         </div>
 
         <hr className="my-3" />
@@ -43,7 +43,7 @@ function CardEquipment({}: Props) {
           <h6 className="text-muted fw-bold mb-2">BY CONDITION</h6>
           <table className="table table-sm table-borderless mb-0">
             <tbody>
-              {Object.entries(stats.byStatus).map(([title, count]) => (
+              {Object.entries(stats.byFamily).map(([title, count]) => (
                 <tr key={title}>
                   <td>{title}</td>
                   <td className="text-end">

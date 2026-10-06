@@ -3,17 +3,20 @@ import {
   Button,
   Col,
   Container,
+  Dropdown,
+  DropdownButton,
   Form,
   Row,
   Table,
 } from "react-bootstrap";
 import { VscSearch, VscTriangleDown, VscTriangleUp } from "react-icons/vsc";
 import type { Job } from "../../types";
-import { useJobs } from "../../hooks/useJobs";
+import { useJobs, useUpdateBatchStatus } from "../../hooks/useJobs";
 import { useMemo, useState } from "react";
 import useJobStore from "../../stores/useJobStore";
 import ModalJob from "./ModalJob";
-import { MdWork } from "react-icons/md";
+import { MdLayersClear, MdWork } from "react-icons/md";
+import React from "react";
 
 type Props = {};
 
@@ -24,15 +27,17 @@ interface SortConfig {
 
 function index({}: Props) {
   const { data: jobsData } = useJobs();
-  const [searchTerm, setSearchTerm] = useState("");
-
   const { reset, setShowModal, jobSelected } = useJobStore();
+  const { mutate: updateBatchStatus, isPending } = useUpdateBatchStatus();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "number",
     direction: "desc",
   });
 
+  // --- Lógica de filtrado y ordenamiento ---
   const filteredAndSortedItems = useMemo(() => {
     if (!jobsData) return [];
 
@@ -40,17 +45,17 @@ function index({}: Props) {
 
     if (searchTerm) {
       const lowSearch = searchTerm.toLowerCase();
-      result = result.filter((item) => {
-        return (
-          item.number?.toLowerCase().includes(lowSearch) ||
-          item.name?.toLowerCase().includes(lowSearch) ||
-          item.type?.toLowerCase().includes(lowSearch) ||
-          item.address?.toLowerCase().includes(lowSearch) ||
-          item.contractor?.toLowerCase().includes(lowSearch) ||
-          item.contact?.toLowerCase().includes(lowSearch) ||
-          item.status?.toLowerCase().includes(lowSearch)
-        );
-      });
+      result = result.filter((item) =>
+        [
+          item.number,
+          item.name,
+          item.type,
+          item.address,
+          item.contractor,
+          item.contact,
+          item.status,
+        ].some((val) => val?.toLowerCase().includes(lowSearch)),
+      );
     }
 
     if (sortConfig.key) {
@@ -64,8 +69,6 @@ function index({}: Props) {
         if (key === "number") {
           const numA = parseFloat(String(aValue));
           const numB = parseFloat(String(bValue));
-
-          // Validamos que ambos sean números válidos para evitar errores de NaN
           if (!isNaN(numA) && !isNaN(numB)) {
             aValue = numA;
             bValue = numB;
@@ -81,15 +84,34 @@ function index({}: Props) {
     return result;
   }, [jobsData, searchTerm, sortConfig]);
 
-  const requestSort = (key: keyof Job) => {
-    let direction: "asc" | "desc" = "asc";
+  // --- Manejo de Selección Múltiple ---
+  const isAllSelected = useMemo(() => {
+    if (filteredAndSortedItems.length === 0) return false;
+    return filteredAndSortedItems.every((item) =>
+      selectedJobIds.includes(Number(item.jobsId)),
+    );
+  }, [filteredAndSortedItems, selectedJobIds]);
 
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allIds = filteredAndSortedItems.map((item) => Number(item.jobsId));
+      setSelectedJobIds(allIds);
+    } else {
+      setSelectedJobIds([]);
     }
-    setSortConfig({ key, direction });
   };
 
+  const handleSelectRow = (jobId: number) => {
+    setSelectedJobIds((prev) =>
+      prev.includes(jobId)
+        ? prev.filter((id) => id !== jobId)
+        : [...prev, jobId],
+    );
+  };
+
+  const clearSelection = () => setSelectedJobIds([]);
+
+  // --- Acciones de Edición ---
   const openModal = () => {
     reset();
     setShowModal(true);
@@ -97,18 +119,41 @@ function index({}: Props) {
 
   const updateJob = (jobId: number) => {
     reset();
-    let item = jobsData?.find((eq) => eq.jobsId === jobId);
+    const item = jobsData?.find((eq) => Number(eq.jobsId) === jobId);
     if (item) {
       jobSelected(item);
       setShowModal(true);
     }
   };
 
+  const handleBulkStatusChange = (newStatus: Job["status"]) => {
+    updateBatchStatus(
+      { ids: selectedJobIds, status: newStatus },
+      {
+        onSuccess: () => {
+          setSelectedJobIds([]); // Limpia la selección al terminar con éxito
+        },
+        onError: (error) => {
+          console.error("Error actualizando estados en lote:", error);
+        },
+      },
+    );
+  };
+
+  const requestSort = (key: keyof Job) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
   return (
     <>
       <Container fluid>
-        <Row className="mb-3">
-          <Col>
+        {/* Barra superior de herramientas / Acciones en Lote */}
+        <Row className="mb-3 align-items-center">
+          <Col md={4} className="d-flex align-items-center gap-2">
             <Button
               variant="outline-primary"
               style={{ fontWeight: "bold" }}
@@ -117,11 +162,59 @@ function index({}: Props) {
               <MdWork style={{ marginRight: "8px" }} />
               Add Job
             </Button>
+
+            {/* Barra de Edición Masiva (Se activa si hay elementos seleccionados) */}
+            {selectedJobIds.length > 0 && (
+              <div className="d-flex align-items-center gap-2 bg-light p-1 px-2 rounded border">
+                <span className="fw-bold fs-7 text-secondary">
+                  {selectedJobIds.length} selected
+                </span>
+
+                <DropdownButton
+                  id="dropdown-bulk-status"
+                  title={isPending ? "Updating..." : "Change Status"}
+                  disabled={isPending}
+                  size="sm"
+                  variant="primary"
+                >
+                  <Dropdown.Item
+                    onClick={() => handleBulkStatusChange("Pending")}
+                  >
+                    Pending
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => handleBulkStatusChange("In Progress")}
+                  >
+                    In Progress
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => handleBulkStatusChange("Done")}>
+                    Done
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => handleBulkStatusChange("On Hold")}
+                  >
+                    On Hold
+                  </Dropdown.Item>
+                </DropdownButton>
+
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-decoration-none text-muted p-0 ms-1"
+                  onClick={clearSelection}
+                  title="Clear selection"
+                >
+                  <MdLayersClear size={18} />
+                </Button>
+              </div>
+            )}
           </Col>
-          <Col xs md={4} lg={3} className="text-center">
-            <div style={{ fontWeight: "bold", fontSize: "30px" }}>{"Job"}</div>
+
+          <Col md={4} className="text-center">
+            <div style={{ fontWeight: "bold", fontSize: "30px" }}>Job</div>
           </Col>
-          <Col>
+
+          <Col md={4}>
             <div className="d-flex align-items-center justify-content-end h-100">
               <Form.Control
                 type="text"
@@ -139,6 +232,8 @@ function index({}: Props) {
             </div>
           </Col>
         </Row>
+
+        {/* Tabla */}
         <Row>
           <Col>
             <div
@@ -155,6 +250,16 @@ function index({}: Props) {
                   }}
                 >
                   <tr style={{ textAlign: "center" }}>
+                    {/* Checkbox Select All */}
+                    <th style={{ width: "40px" }}>
+                      <Form.Check
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={handleSelectAll}
+                        aria-label="Select all jobs"
+                      />
+                    </th>
+
                     <th
                       onClick={() => requestSort("number")}
                       style={{ cursor: "pointer" }}
@@ -243,38 +348,50 @@ function index({}: Props) {
                   </tr>
                 </thead>
                 <tbody style={{ textAlign: "center" }}>
-                  {filteredAndSortedItems?.map((equipment) => (
-                    <tr key={equipment.jobsId} className="align-middle py-3">
-                      <td>{equipment.number}</td>
-                      <td>{equipment.name}</td>
-                      <td>{equipment.type}</td>
-                      <td>{equipment.address}</td>
-                      <td>{equipment.contractor}</td>
-                      <td>{equipment.contact}</td>
-                      <td>
-                        {equipment.status === "Pending" ? (
-                          <Badge bg="secondary">Pending</Badge>
-                        ) : equipment.status === "In Progress" ? (
-                          <Badge bg="primary">In Progress</Badge>
-                        ) : equipment.status === "Done" ? (
-                          <Badge bg="success">Done</Badge>
-                        ) : equipment.status === "On Hold" ? (
-                          <Badge bg="warning">On Hold</Badge>
-                        ) : (
-                          <Badge bg="dark">?</Badge>
-                        )}
-                      </td>
-                      <td>
-                        <Button
-                          style={{ fontWeight: "bold" }}
-                          variant="outline-primary"
-                          onClick={() => updateJob(Number(equipment.jobsId))}
-                        >
-                          Update
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredAndSortedItems?.map((equipment) => {
+                    const isSelected = selectedJobIds.includes(
+                      Number(equipment.jobsId),
+                    );
+                    return (
+                      <tr
+                        key={equipment.jobsId}
+                        className={`align-middle py-3 ${isSelected ? "table-active" : ""}`}
+                      >
+                        {/* Checkbox por fila */}
+                        <td>
+                          <Form.Check
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() =>
+                              handleSelectRow(Number(equipment.jobsId))
+                            }
+                            aria-label={`Select job ${equipment.number}`}
+                          />
+                        </td>
+                        <td>{equipment.number}</td>
+                        <td>{equipment.name}</td>
+                        <td>{equipment.type}</td>
+                        <td>{equipment.address}</td>
+                        <td>{equipment.contractor}</td>
+                        <td>{equipment.contact}</td>
+                        <td>
+                          <StatusBadge status={equipment.status} />
+                        </td>
+                        <td>
+                          {/* Deshabilitar o esconder si hay selección masiva activa para evitar inconsistencias */}
+                          <Button
+                            style={{ fontWeight: "bold" }}
+                            variant="outline-primary"
+                            size="sm"
+                            disabled={selectedJobIds.length > 1}
+                            onClick={() => updateJob(Number(equipment.jobsId))}
+                          >
+                            Update
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </div>
@@ -286,5 +403,21 @@ function index({}: Props) {
     </>
   );
 }
+
+// Componente auxiliar para reducir renderizados y limpiar el JSX principal
+const StatusBadge = React.memo(({ status }: { status: Job["status"] }) => {
+  switch (status) {
+    case "Pending":
+      return <Badge bg="secondary">Pending</Badge>;
+    case "In Progress":
+      return <Badge bg="primary">In Progress</Badge>;
+    case "Done":
+      return <Badge bg="success">Done</Badge>;
+    case "On Hold":
+      return <Badge bg="warning">On Hold</Badge>;
+    default:
+      return <Badge bg="dark">?</Badge>;
+  }
+});
 
 export default index;

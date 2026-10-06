@@ -33,3 +33,27 @@ export function useSavejob() {
     },
   });
 }
+
+
+const updateBatchJobStatus = async ({
+  ids,
+  status,
+}: {
+  ids: number[];
+  status: Job["status"];
+}) => {
+  return api.patch("v1/job/batch-status", { ids, status });
+};
+
+// Custom Hook para TanStack Query
+export function useUpdateBatchStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateBatchJobStatus,
+    onSuccess: () => {
+      // Invalida la query ["jobs"] para que la tabla se recargue automáticamente
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}

@@ -1,4 +1,4 @@
-// export const API_BASE_URL = "http://localhost:8080/api/";
+// export const API_BASE_URL = "http://localhost:8082/api/";
 
 // Production environment
 export const API_BASE_URL = "https://api-gateway-px44.onrender.com/api/";
@@ -30,87 +30,100 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Interceptor de Request
 api.interceptors.request.use(
   (config) => {
-    const { token } = useAuthStore.getState();
+    const token =
+      useAuthStore.getState().token || localStorage.getItem("auth_token");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error),
 );
 
+// Interceptor de Response
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 1. Evitar bucle infinito si el error viene del propio endpoint de refresh
-    if (originalRequest.url?.includes("/api/auth/refresh")) {
+    // 1. Evitar interceptar peticiones que no tengan respuesta o no sean 401
+    // Y evitar interceptar la propia petición de refresh token si falla
+    if (
+      !error.response ||
+      error.response.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.includes("/api/auth/refresh")
+    ) {
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
+    // 2. Si ya hay un refresh en curso, encolar las peticiones concurrentes
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => {
+          originalRequest._retry = true;
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      const { refreshToken, login, logout } = useAuthStore.getState();
-
-      if (!refreshToken) {
-        logout();
-        // Considera usar un navigate de react-router si es posible
-        window.location.href = "https://ckarlosdev.github.io/login/";
-        return Promise.reject(error);
-      }
-
-      try {
-        // 2. Usar axios limpio para evitar que otros interceptores interfieran
-        const res = await axios.post(
-          "https://api-gateway-px44.onrender.com/api/auth/refresh",
-          { refreshToken: refreshToken }, // Verifica que el nombre de la propiedad sea correcto
-          { headers: { "Content-Type": "application/json" } },
-        );
-
-        // 3. Verifica la estructura de res.data.
-        // Si tu API devuelve { accessToken, refreshToken }, asegúrate de mapearlos bien.
-        const { token: newToken, refreshToken: newRefresh } = res.data;
-
-        if (!newToken) throw new Error("No token received");
-
-        login(newToken, newRefresh || refreshToken); // Mantener el viejo si no llega uno nuevo
-
-        // 4. Actualizar el header del request original
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
-        processQueue(null, newToken);
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        logout();
-
-        // Solo redirigir si realmente falló el refresh por token inválido
-        console.error("Refresh token expired or invalid", refreshError);
-        window.location.href = "https://ckarlosdev.github.io/login/";
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+        .catch((err) => Promise.reject(err));
     }
 
-    return Promise.reject(error);
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    const refreshToken =
+      useAuthStore.getState().refreshToken ||
+      localStorage.getItem("refresh_token");
+
+    const { login, logout } = useAuthStore.getState();
+
+    // Si no existe refresh token localmente, cerrar sesión inmediatamente
+    if (!refreshToken) {
+      isRefreshing = false;
+      logout();
+      return Promise.reject(error);
+    }
+
+    try {
+      // Petición aislada (usando una instancia limpia de axios, no "api")
+      const res = await axios.post(
+        "https://api-gateway-px44.onrender.com/api/auth/refresh",
+        { refreshToken }, // Asegúrate de que tu backend espera el JSON { refreshToken: "..." }
+      );
+
+      // 3. Normalizar la respuesta por si el backend usa nombres de llaves distintos
+      const data = res.data;
+      const newToken =
+        data.token || data.accessToken || data.access_token || data.jwt;
+      const newRefresh =
+        data.refreshToken || data.refresh_token || refreshToken;
+
+      if (!newToken) {
+        throw new Error("El backend no retornó un nuevo accesstoken válido.");
+      }
+
+      // Actualizar Zustand / localStorage
+      login(newToken, newRefresh);
+
+      // Procesar peticiones en cola acumuladas durante el refresh
+      processQueue(null, newToken);
+
+      // Actualizar el header de la petición fallida original y reintentar
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      return api(originalRequest);
+    } catch (refreshError: any) {
+      // 4. Si la renovación falla, rechazar las peticiones en cola y desloguear
+      processQueue(refreshError, null);
+      logout();
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   },
 );

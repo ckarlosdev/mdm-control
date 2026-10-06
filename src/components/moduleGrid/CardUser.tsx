@@ -8,21 +8,23 @@ function CardUser({}: Props) {
   const { data: users = [] } = useUsers();
 
   const stats = useMemo(() => {
-    return users.reduce(
-      (acc, user) => {
-        // Usamos el operador de coalescencia nula (?? []) para evitar el error
-        const userRoles = user.roles ?? [];
+    return users
+      .filter((user) => user.isActive === true)
+      .reduce(
+        (acc, user) => {
+          // Usamos el operador de coalescencia nula (?? []) para evitar el error
+          const userRoles = user.roles ?? [];
 
-        userRoles.forEach((rol) => {
-          acc.byRole[rol] = (acc.byRole[rol] || 0) + 1;
-        });
+          userRoles.forEach((rol) => {
+            acc.byRole[rol] = (acc.byRole[rol] || 0) + 1;
+          });
 
-        return acc;
-      },
-      {
-        byRole: {} as Record<string, number>,
-      },
-    );
+          return acc;
+        },
+        {
+          byRole: {} as Record<string, number>,
+        },
+      );
   }, [users]);
 
   return (
