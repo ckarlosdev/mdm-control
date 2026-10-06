@@ -57,6 +57,7 @@ export type Equipment = {
   serialNumber: string;
   hour: string;
   user: string;
+  equipmentStatus: string;
 };
 
 export type Attachment = {

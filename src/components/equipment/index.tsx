@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   ButtonGroup,
   Col,
@@ -32,6 +33,7 @@ interface SortConfig {
 function index({}: Props) {
   const { data: equipmentsData } = useEquipments();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFamily, setSelectedFamily] = useState("");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const { reset, setShowModal, setShowModalQr, equipmentSelected } =
@@ -47,68 +49,69 @@ function index({}: Props) {
 
     let result = [...equipmentsData];
 
-    // 1. Filtrado (se mantiene igual)
+    // 1. Filtrado por estado del equipo (equipmentStatus === "1")
+    result = result.filter((equip) => equip.number != "E00");
+
+    // 2. Búsqueda por texto general
     if (searchTerm) {
       const lowSearch = searchTerm.toLowerCase();
       result = result.filter((equip) => {
         return (
           equip.number?.toLowerCase().includes(lowSearch) ||
+          equip.family?.toLowerCase().includes(lowSearch) ||
           equip.name?.toLowerCase().includes(lowSearch) ||
           equip.manufacturing?.toLowerCase().includes(lowSearch) ||
           equip.model?.toLowerCase().includes(lowSearch) ||
           equip.year?.toLowerCase().includes(lowSearch) ||
           equip.condition?.toLowerCase().includes(lowSearch) ||
-          equip.serialNumber?.toLowerCase().includes(lowSearch)
+          equip.serialNumber?.toLowerCase().includes(lowSearch) ||
+          equip.equipmentStatus?.toLowerCase().includes(lowSearch)
         );
       });
     }
 
-    // 2. Ordenamiento inteligente (Natural Sort)
-    if (sortConfig.key) {
-      const { key, direction } = sortConfig;
-
-      // Creamos un comparador nativo con ordenamiento numérico activado
-      const collator = new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
-
-      result.sort((a, b) => {
-        let aValue = a[key];
-        let bValue = b[key];
-
-        // Manejo de valores nulos o indefinidos colocándolos siempre al final
-        if (aValue == null) return 1;
-        if (bValue == null) return -1;
-
-        // Si la clave a ordenar es "number", nos aseguramos de comparar de forma natural
-        // (por ejemplo: limpia letras/guiones si fuera necesario, o simplemente compara numéricamente)
-        if (key === "number") {
-          // Aseguramos conversión a string para que el collator funcione perfectamente
-          const strA = String(aValue);
-          const strB = String(bValue);
-
-          return direction === "asc"
-            ? collator.compare(strA, strB)
-            : collator.compare(strB, strA);
-        }
-
-        // Para el resto de columnas de texto o valores genéricos
-        if (typeof aValue === "string" && typeof bValue === "string") {
-          return direction === "asc"
-            ? collator.compare(aValue, bValue)
-            : collator.compare(bValue, aValue);
-        }
-
-        // Caída para tipos de datos puramente numéricos u otros (por ejemplo, Odometer / hour)
-        if (aValue < bValue) return direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return direction === "asc" ? 1 : -1;
-        return 0;
-      });
+    if (selectedFamily) {
+      result = result.filter((equip) => equip.family === selectedFamily);
     }
 
+    // 3. Ordenamiento (si no hay sortConfig.key, usa "number" y "asc" por defecto)
+    const key = sortConfig.key || "number";
+    const direction = sortConfig.direction || "asc";
+
+    const collator = new Intl.Collator(undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+    result.sort((a, b) => {
+      let aValue = a[key];
+      let bValue = b[key];
+
+      // Valores nulos/indefinidos al final
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Ordenamiento natural para "number" o cualquier texto
+      if (
+        key === "number" ||
+        (typeof aValue === "string" && typeof bValue === "string")
+      ) {
+        const strA = String(aValue);
+        const strB = String(bValue);
+
+        return direction === "asc"
+          ? collator.compare(strA, strB)
+          : collator.compare(strB, strA);
+      }
+
+      // Ordenamiento numérico estándar para otros datos (Ej. Odómetro, Horas)
+      if (aValue < bValue) return direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
     return result;
-  }, [equipmentsData, searchTerm, sortConfig]);
+  }, [equipmentsData, searchTerm, selectedFamily, sortConfig]);
 
   const requestSort = (key: keyof Equipment) => {
     let direction: "asc" | "desc" = "asc";
@@ -278,20 +281,39 @@ function index({}: Props) {
             </ButtonGroup>
           </Col>
           <Col>
-            <div className="d-flex align-items-center justify-content-end h-100">
-              <Form.Control
-                type="text"
-                id="inputSearch"
+            <div className="d-flex align-items-center justify-content-end gap-2 h-100">
+              <Form.Select
+                value={selectedFamily}
+                onChange={(e) => setSelectedFamily(e.target.value)}
                 style={{
-                  fontWeight: "bold",
-                  width: "300px",
-                  textAlign: "center",
+                  width: "180px",
+                  fontWeight: "500",
                 }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search equipment..."
-              />
-              <VscSearch style={{ marginLeft: "8px" }} />
+              >
+                <option value="">All Types</option>
+                <option value="Equipment">Equipments</option>
+                <option value="Heavy Truck">Heavy Trucks</option>
+                <option value="Light Truck">Light Trucks</option>
+                <option value="Semi Trailer">Semi Trailers</option>
+                <option value="Trailer">Trailers</option>
+              </Form.Select>
+
+              <div className="d-flex align-items-center">
+                <Form.Control
+                  type="text"
+                  id="inputSearch"
+                  style={{
+                    fontWeight: "bold",
+                    width: "300px",
+                    textAlign: "center",
+                  }}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search equipment..."
+                />
+
+                <VscSearch style={{ marginLeft: "8px" }} />
+              </div>
             </div>
           </Col>
         </Row>
@@ -317,6 +339,18 @@ function index({}: Props) {
                     >
                       Number{" "}
                       {sortConfig.key === "number" &&
+                        (sortConfig.direction === "asc" ? (
+                          <VscTriangleUp />
+                        ) : (
+                          <VscTriangleDown />
+                        ))}
+                    </th>
+                    <th
+                      onClick={() => requestSort("family")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Type{" "}
+                      {sortConfig.key === "family" &&
                         (sortConfig.direction === "asc" ? (
                           <VscTriangleUp />
                         ) : (
@@ -407,6 +441,18 @@ function index({}: Props) {
                           <VscTriangleDown />
                         ))}
                     </th>
+                    <th
+                      onClick={() => requestSort("equipmentStatus")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Status{" "}
+                      {sortConfig.key === "equipmentStatus" &&
+                        (sortConfig.direction === "asc" ? (
+                          <VscTriangleUp />
+                        ) : (
+                          <VscTriangleDown />
+                        ))}
+                    </th>
                     <th>QR</th>
                     <th>Update</th>
                   </tr>
@@ -417,7 +463,8 @@ function index({}: Props) {
                       key={equipment.equipmentsId}
                       className="align-middle py-3"
                     >
-                      <td>{equipment.number.replace(/\D/g, "")}</td>
+                      <td>{equipment.number}</td>
+                      <td>{equipment.family}</td>
                       <td>{equipment.name}</td>
                       <td>{equipment.manufacturing}</td>
                       <td>{equipment.model}</td>
@@ -425,6 +472,29 @@ function index({}: Props) {
                       <td>{equipment.condition}</td>
                       <td>{equipment.serialNumber}</td>
                       <td>{equipment.hour}</td>
+                      <td>
+                        <Badge
+                          pill
+                          bg={
+                            equipment.equipmentStatus === "1"
+                              ? "success"
+                              : "secondary"
+                          }
+                          className="d-inline-flex align-items-center gap-2 px-2 py-2"
+                        >
+                          <span
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              backgroundColor: "currentColor",
+                            }}
+                          />
+                          {equipment.equipmentStatus === "1"
+                            ? "Active"
+                            : "Inactive"}
+                        </Badge>
+                      </td>
                       <td>
                         <OverlayTrigger
                           placement="left"
